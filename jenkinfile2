@@ -1,0 +1,46 @@
+pipeline {
+    agent {
+        label 'slave-server'
+    }
+    
+    tools {
+        maven 'maven'
+    }
+    
+    stages {
+        stage("Git Checkout") {
+            steps {
+                git branch: 'main', url: 'https://github.com/Nandini-1428/test-petclinic-app.git'
+            }
+        }
+        stage("Compile") {
+            steps {
+                sh "mvn compile"
+            }
+        }
+        stage("Test") {
+            steps {
+                sh "mvn test -DskipTests=true"
+            }
+        }
+        stage("Build") {
+            steps {
+                sh "mvn package -DskipTests=true"
+            }
+        }
+        stage("Dcoker build and push") {
+            steps {
+                script {
+                   withDockerRegistry(credentialsId: 'docker-login') {
+                    
+                    sh 'docker build -t mypetimage .'
+                    sh 'docker tag mypetimage nandinigowda/petclinicimage:1.0'
+                    sh 'docker push nandinigowda/petclinicimage:1.0'
+                    sh 'docker run -p 8080:8080 --name webapp nandinigowda/petclinicimage:1.0'
+                    }
+                }
+            }
+        }
+        
+    }
+}
